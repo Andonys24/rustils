@@ -55,21 +55,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
 
-    let mut all_lines: Vec<String> = Vec::new();
-
-    for line_result in reader.lines() {
-        all_lines.push(line_result?);
-    }
-
-    let total_lines = all_lines.len();
-    // Compute start index safely
-    let start = total_lines.saturating_sub(lines_to_read);
-    let end = total_lines;
+    let all_lines: Vec<String> = reader.lines().collect::<Result<_, _>>()?;
+    let start = all_lines.len().saturating_sub(lines_to_read);
 
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    for line in &all_lines[start..end] {
+    for line in all_lines.iter().skip(start) {
         writeln!(handle, "{}", line)?;
     }
 
