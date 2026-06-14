@@ -13,3 +13,7 @@ version = "0.1.0"
 [[package]]
 name = "head"
 version = "0.1.0"
+
+[[package]]
+name = "tail"
+version = "0.1.0"
