@@ -1,58 +1,29 @@
 use std::{
-    env,
     fs::File,
     io::{self, BufRead, BufReader, Write},
-    process,
+    path::PathBuf,
 };
+
+use clap::Parser;
+
+/// Print the first 10 lines of each FILE to standard output.
+#[derive(Parser)]
+#[command(name = "head", version = "0.1.0")]
+struct Cli {
+    /// Print the first K lines instead of the first 10
+    #[arg(short = 'n', default_value_t = 10, value_name = "LINES")]
+    lines: usize,
+
+    /// File to read
+    #[arg(required = true, value_name = "FILE")]
+    file_path: PathBuf,
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // We collected the arguments.
-    let args: Vec<String> = env::args().skip(1).collect();
+    let args = Cli::parse();
 
-    // Default values
-    let mut lines_to_read: usize = 10;
-    let mut file_path: Option<&String> = None;
-
-    // Argument Analysis
-    let mut i = 0;
-
-    while i < args.len() {
-        match args[i].as_str() {
-            "-n" => {
-                if i + 1 < args.len() {
-                    match args[i + 1].parse::<usize>() {
-                        Ok(num) => {
-                            lines_to_read = num;
-                            i += 2;
-                        }
-                        Err(e) => {
-                            eprintln!("head: invalid number of lines '{}': {}", args[i + 1], e);
-                            process::exit(1);
-                        }
-                    }
-                } else {
-                    eprintln!("head: option requires an argument -- 'n'");
-                    process::exit(1);
-                }
-            }
-            // Anything that does not begin with '-' will be assumed to be a file path
-            _path => {
-                file_path = Some(&args[i]);
-                i += 1;
-            }
-        }
-    }
-
-    // We validate that an argument exists
-    let path = match file_path {
-        Some(p) => p,
-        None => {
-            eprintln!("Error: Please provide a filepath.");
-            process::exit(1);
-        }
-    };
-
-    let file = File::open(path)?;
+    let file = File::open(args.file_path)?;
     let mut reader = BufReader::new(file);
 
     let stdout = io::stdout();
@@ -60,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut line_buffer = String::new();
 
-    for _ in 0..lines_to_read {
+    for _ in 0..args.lines {
         line_buffer.clear();
 
         if reader.read_line(&mut line_buffer)? == 0 {
