@@ -66,8 +66,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         for &byte in &buffer[..bytes_read] {
             total_bytes += 1;
-            total_chars += 1;
-            current_line_chars += 1;
+
+            let is_utf8_continuation = (128..=191).contains(&byte);
+
+            if !is_utf8_continuation {
+                total_chars += 1;
+                current_line_chars += 1;
+            }
 
             // Actual line break detection
             if byte == b'\n' {
