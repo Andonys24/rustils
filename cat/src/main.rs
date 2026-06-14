@@ -1,31 +1,55 @@
 use std::{
-    env,
     fs::File,
     io::{self, Write},
+    path::PathBuf,
 };
 
-fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
+use clap::Parser;
 
-    if args.is_empty() {
-        println!("Error: Please provider a file path.");
-        return;
-    }
+/// Concatenate FILE(s) to standart output
+#[derive(Parser)]
+#[command(name = "cat", version = "0.1.0")]
+struct Cli {
+    /// Number all output lines
+    #[arg(short = 'n')]
+    number: bool,
+
+    /// Number nonempty output lines, overrides -n
+    #[arg(short = 'b')]
+    number_nonempty: bool,
+
+    /// Display $ at end of each line
+    #[arg(short = 'E', long = "show-ends")]
+    show_ends: bool,
+
+    /// Files to concatenate and display
+    #[arg(required = true, value_name = "FILE")]
+    files: Vec<PathBuf>,
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Cli::parse();
 
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    for file_path in &args {
+    for file_path in &args.files {
         match File::open(file_path) {
             Ok(mut file) => {
                 if let Err(e) = io::copy(&mut file, &mut handle) {
-                    eprintln!("cat: error writing {} to stdout: {}", file_path, e);
+                    eprintln!(
+                        "cat: error writing {} to stdout: {}",
+                        file_path.display(),
+                        e
+                    );
                 }
             }
             Err(e) => {
-                eprintln!("cat: {}: {}", file_path, e);
+                eprintln!("cat: {}: {}", file_path.display(), e);
             }
         }
     }
-    let _ = handle.flush();
+
+    handle.flush()?;
+    Ok(())
 }
