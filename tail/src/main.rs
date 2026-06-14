@@ -1,58 +1,28 @@
+use clap::Parser;
 use std::{
-    env,
     fs::File,
     io::{self, BufRead, BufReader, Read, Seek, SeekFrom, Write},
-    process,
+    path::PathBuf,
 };
+
+/// Print the last 10 lines of each FILE to standard output.
+#[derive(Parser)]
+#[command(name = "tail", version = "0.1.0")]
+struct Cli {
+    /// Output the last K lines instead of the last 10
+    #[arg(short = 'n', default_value_t = 10, value_name = "LINES")]
+    lines: usize,
+
+    /// File to read
+    #[arg(required = true, value_name = "FILE")]
+    file_path: PathBuf,
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // We collected the arguments.
-    let args: Vec<String> = env::args().skip(1).collect();
+    let args = Cli::parse();
 
-    // Default values
-    let mut lines_to_read: usize = 10;
-    let mut file_path: Option<&String> = None;
-
-    // Argument Analysis
-    let mut i = 0;
-
-    while i < args.len() {
-        match args[i].as_str() {
-            "-n" => {
-                if i + 1 < args.len() {
-                    match args[i + 1].parse::<usize>() {
-                        Ok(num) => {
-                            lines_to_read = num;
-                            i += 2;
-                        }
-                        Err(e) => {
-                            eprintln!("tail: invalid number of lines '{}': {}", args[i + 1], e);
-                            process::exit(1);
-                        }
-                    }
-                } else {
-                    eprintln!("tail: option requires an argument -- 'n'");
-                    process::exit(1);
-                }
-            }
-            // Anything that does not begin with '-' will be assumed to be a file path
-            _path => {
-                file_path = Some(&args[i]);
-                i += 1;
-            }
-        }
-    }
-
-    // We validate that an argument exists
-    let path = match file_path {
-        Some(p) => p,
-        None => {
-            eprintln!("Error: Please provide a filepath.");
-            process::exit(1);
-        }
-    };
-
-    let mut file = File::open(path)?;
+    let mut file = File::open(args.file_path)?;
 
     // We obtain the total file size
     let file_length = file.metadata()?.len();
@@ -62,7 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Move backward byte by byte from the end of the file
 
-    while pos > 0 && lines_found < lines_to_read {
+    while pos > 0 && lines_found < args.lines {
         pos -= 1;
         file.seek(SeekFrom::Start(pos))?;
 

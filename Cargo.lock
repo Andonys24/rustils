@@ -175,6 +175,9 @@ dependencies = [
 [[package]]
 name = "tail"
 version = "0.1.0"
+dependencies = [
+ "clap",
+]
 
 [[package]]
 name = "unicode-ident"
